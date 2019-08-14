@@ -1,2 +1,2 @@
-# wasm
-Parts of Gemmi in WebAssembly.
+
+* pdb2cif - converts PDB files to PDBx/mmCIF format

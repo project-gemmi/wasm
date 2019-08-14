@@ -1,0 +1,92 @@
+<!doctype html>
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>pdb->mmcif</title>
+  <style>
+   html { background-color: #f8f8f8; color: #111; }
+   body { font-family: sans-serif; line-height: 1.6; padding: 5px 15px; }
+   textarea {
+    line-height: 1.5;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #bbb;
+    box-shadow: 1px 1px 1px #888;
+  }
+  </style>
+ </head>
+ <body>
+  <p>
+  This page (web app) converts PDB files to mmCIF inside your web browser.<br>
+  Once this page is loaded, no server is contacted.<br>
+  Requires not too old browser (from 2018 or later).
+  </p>
+  <form>
+   <p>
+    To start, select PDB file from your disk.
+    <input id="fileInput" type="file" onchange="read_file()" disabled>
+   </p>
+  </form>
+  <textarea class="emscripten" id="output" rows="8" cols="80"></textarea>
+  <p id="message" hidden>
+  Done! <a id="link">Download CIF</a> (or open this link in new tab).
+  </p>
+  <script type='text/javascript'>
+  var fileInput = document.getElementById('fileInput');
+  var message = document.getElementById('message');
+  var link = document.getElementById('link');
+  var element = document.getElementById('output');
+
+  var Module = {
+    print: function(text) {
+        console.log(text);
+        element.value += text + "\n";
+        element.scrollTop = element.scrollHeight; // focus on bottom
+    },
+    setStatus: function(text) {
+      Module.print(text);
+      if (text === '') fileInput.disabled = false;
+    }
+  };
+  Module['printErr'] = Module['print'];
+
+  Module.print('Downloading the converter...');
+  window.onerror = function() {
+    Module.print('Exception thrown, see JavaScript console');
+  };
+
+  function read_file() {
+    var start = new Date();
+    message.hidden = true;
+    if (!fileInput || fileInput.files.length !== 1) return;
+    var f = fileInput.files[0];
+    Module.print('Converting ' + f.name + ' (' + f.size + ' bytes)...');
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      var arr = new Uint8Array(evt.target.result);
+      var buffer = Module._malloc(arr.length);  // to be free'd by pdb2cif
+      Module.writeArrayToMemory(arr, buffer);
+      var cif_str = Module.ccall('pdb2cif', 'string', ['number', 'number'],
+                                 [buffer, arr.length]);
+      Module.ccall('clear_string', null, [], []);
+      if (cif_str[0] == 'E') {
+        Module.print(cif_str);
+        return;
+      }
+      Module.print('... into mmCIF (' + cif_str.length + ' bytes).');
+      var now = new Date();
+      var version = Module.ccall('get_version', 'string', [], []);
+      Module.print((now - start) + ' ms elapsed. Powered by GEMMI v' +
+                   version + '.\n');
+      link.download = 'converted.cif';
+      var blob = new Blob([cif_str], {type: 'text/plain'});
+      link.href = window.URL.createObjectURL(blob);
+      message.hidden = false;
+      //link.click();
+    };
+    reader.readAsArrayBuffer(f);
+  }
+  </script>
+  <script type="text/javascript" src="pdb2cif.js"></script>
+ </body>
+</html>
