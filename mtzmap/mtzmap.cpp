@@ -7,12 +7,12 @@
 
 class MtzMap {
 public:
-  MtzMap(int32_t data_, size_t size) {
-    // char* or void* cannot be used
-    // https://github.com/emscripten-core/emscripten/issues/9448
-    const char* data = (const char*) data_;
+  // char* or void* cannot be used
+  // https://github.com/emscripten-core/emscripten/issues/9448
+  MtzMap(int32_t data, size_t size)
+    : data_((const char*) data) {
     try {
-      mtz_.read_stream(gemmi::MemoryStream(data, data + size), true);
+      mtz_.read_stream(gemmi::MemoryStream(data_, data_ + size), false);
     } catch (std::runtime_error& e) {
       (void) e;
     }
@@ -33,11 +33,12 @@ public:
     if (!f_col || !phi_col)
       return 0; // "Default map coefficient labels not found."
     try {
-      gemmi::Grid<std::complex<float>> coef_grid
-        = gemmi::get_f_phi_on_grid<float>(gemmi::MtzDataProxy{mtz_},
-                                          f_col->idx, phi_col->idx, true,
-                                          {{0, 0, 0}}, 3.);
-      grid_ = gemmi::transform_f_phi_grid_to_map(std::move(coef_grid));
+      const float* raw_data = (const float*)(data_ + 80);
+      gemmi::Grid<std::complex<float>> coefs = gemmi::get_f_phi_on_grid<float>(
+                                gemmi::MtzExternalDataProxy(mtz_, raw_data),
+                                f_col->idx, phi_col->idx, true,
+                                {{0, 0, 0}}, 3.);
+      grid_ = gemmi::transform_f_phi_grid_to_map(std::move(coefs));
     } catch (std::runtime_error& e) {
       (void) e;
       return 0;
@@ -66,6 +67,7 @@ public:
 
 private:
   gemmi::Mtz mtz_;
+  const char* data_;
   gemmi::Grid<float> grid_;
   double rmsd_;
 };
