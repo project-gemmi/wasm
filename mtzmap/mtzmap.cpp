@@ -34,10 +34,10 @@ public:
       return 0; // "Default map coefficient labels not found."
     try {
       const float* raw_data = (const float*)(data_ + 80);
+      gemmi::MtzExternalDataProxy proxy(mtz_, raw_data);
+      auto size = gemmi::get_size_for_hkl(proxy, {{0, 0, 0}}, 3.);
       gemmi::Grid<std::complex<float>> coefs = gemmi::get_f_phi_on_grid<float>(
-                                gemmi::MtzExternalDataProxy(mtz_, raw_data),
-                                f_col->idx, phi_col->idx, true,
-                                {{0, 0, 0}}, 3.);
+          proxy, f_col->idx, phi_col->idx, size, /*half_l=*/true);
       grid_ = gemmi::transform_f_phi_grid_to_map(std::move(coefs));
     } catch (std::runtime_error& e) {
       (void) e;
