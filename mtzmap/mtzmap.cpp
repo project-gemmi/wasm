@@ -1,5 +1,8 @@
 // Copyright 2019 Global Phasing Ltd.
 
+#define POCKETFFT_CACHE_SIZE 0
+#define POCKETFFT_NO_MULTITHREADING
+#define POCKETFFT_NO_VECTORS
 #include <gemmi/mtz.hpp>      // for Mtz
 #include <gemmi/fourier.hpp>  // for update_cif_block
 #include <gemmi/math.hpp>     // for Variance
@@ -30,17 +33,21 @@ public:
           (phi_col = mtz_.column_with_label(default_labels[i+1], nullptr))) {
         break;
       }
-    if (!f_col || !phi_col)
-      return 0; // "Default map coefficient labels not found."
+    if (!f_col || !phi_col) {
+      std::puts("Default map coefficient labels not found");
+      return 0;
+    }
     try {
       const float* raw_data = (const float*)(data_ + 80);
       gemmi::MtzExternalDataProxy proxy(mtz_, raw_data);
       auto size = gemmi::get_size_for_hkl(proxy, {{0, 0, 0}}, 3.);
-      gemmi::Grid<std::complex<float>> coefs = gemmi::get_f_phi_on_grid<float>(
-          proxy, f_col->idx, phi_col->idx, size, /*half_l=*/true);
-      grid_ = gemmi::transform_f_phi_grid_to_map(std::move(coefs));
+      gemmi::Grid<std::complex<float>> coefs
+        = gemmi::get_f_phi_on_grid<float>(proxy, f_col->idx, phi_col->idx,
+                                          size, /*half_l=*/true,
+                                          gemmi::HklOrient::LKH);
+      gemmi::transform_f_phi_grid_to_map_(std::move(coefs), grid_);
     } catch (std::runtime_error& e) {
-      (void) e;
+      std::puts(e.what());
       return 0;
     }
     gemmi::Variance grid_variance(grid_.data.begin(), grid_.data.end());
