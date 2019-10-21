@@ -26,7 +26,7 @@ const char* pdb2cif(char* data, size_t size) {
       setup_entities(st);
       gemmi::cif::Document doc;
       doc.blocks.resize(1);
-      update_cif_block(st, doc.blocks[0]);
+      gemmi::update_cif_block(st, doc.blocks[0], true);
       std::ostringstream os;
       write_cif_to_stream(os, doc, gemmi::cif::Style::PreferPairs);
       global_str = os.str();
