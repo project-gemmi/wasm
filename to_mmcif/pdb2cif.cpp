@@ -45,6 +45,7 @@ const char* mtz2cif(char* data, size_t size) {
     gemmi::Mtz mtz;
     mtz.read_stream(gemmi::MemoryStream(data, data + size), true);
     std::free(data);
+    mtz.switch_to_original_hkl();
     std::ostringstream os;
     gemmi::MtzToCif mtz_to_cif;
     mtz_to_cif.write_cif(mtz, os);

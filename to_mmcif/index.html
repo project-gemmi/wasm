@@ -29,7 +29,7 @@
   </form>
   <textarea class="emscripten" id="output" rows="8" cols="72"></textarea>
   <p id="message" hidden>
-  Done! <a id="link">Download CIF</a> (or open this link in new tab).
+  Done! <a id="link">Download CIF</a>.
   </p>
   <script type='text/javascript'>
   var fileInput = document.getElementById('fileInput');
@@ -39,13 +39,17 @@
 
   var Module = {
     print: function(text) {
-        console.log(text);
-        element.value += text + "\n";
-        element.scrollTop = element.scrollHeight; // focus on bottom
+      console.log(text);
+      element.value += text + '\n';
+      element.scrollTop = element.scrollHeight; // focus on bottom
     },
     setStatus: function(text) {
       Module.print(text);
       if (text === '') fileInput.disabled = false;
+    },
+    onRuntimeInitialized: function() {
+      var version = Module.ccall('get_version', 'string', [], []);
+      Module.print('Powered by GEMMI v' + version + '.\n');
     }
   };
   Module['printErr'] = Module['print'];
@@ -78,11 +82,9 @@
       }
       Module.print('... into mmCIF (' + cif_str.length + ' bytes).');
       var now = new Date();
-      var version = Module.ccall('get_version', 'string', [], []);
       var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
-      Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb +
-                   ' MB.\nPowered by GEMMI v' + version + '.\n');
-      link.download = 'converted.cif';
+      Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb + ' MB.\n');
+      link.download = f.name.substr(0, f.name.lastIndexOf('.')) + '.cif';
       var blob = new Blob([cif_str], {type: 'text/plain'});
       link.href = window.URL.createObjectURL(blob);
       message.hidden = false;
