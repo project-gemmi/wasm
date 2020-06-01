@@ -17,13 +17,13 @@
  </head>
  <body>
   <p>
-  This page (web app) converts PDB files to mmCIF inside your web browser.<br>
+  This page (web app) converts PDB and MTZ files to mmCIF inside your web browser.<br>
   Once this page is loaded, no server is contacted.<br>
   Requires not too old browser (from 2018 or later).
   </p>
   <form>
    <p>
-    To start, select PDB file from your disk.
+    To start, select either PDB or MTZ file from disk.
     <input id="fileInput" type="file" onchange="read_file()" disabled>
    </p>
   </form>
@@ -60,13 +60,16 @@
     message.hidden = true;
     if (!fileInput || fileInput.files.length !== 1) return;
     var f = fileInput.files[0];
-    Module.print('Converting ' + f.name + ' (' + f.size + ' bytes)...');
+    var is_mtz = f.name.toLowerCase().endsWith('.mtz');
+    Module.print('Converting ' + (is_mtz ? 'MTZ' : 'PDB') + ' file ' + f.name +
+                 ' (' + f.size + ' bytes)...');
     var reader = new FileReader();
     reader.onload = function(evt) {
       var arr = new Uint8Array(evt.target.result);
       var buffer = Module._malloc(arr.length);  // to be free'd by pdb2cif
       Module.writeArrayToMemory(arr, buffer);
-      var cif_str = Module.ccall('pdb2cif', 'string', ['number', 'number'],
+      var cif_str = Module.ccall(is_mtz ? 'mtz2cif' : 'pdb2cif',
+                                 'string', ['number', 'number'],
                                  [buffer, arr.length]);
       Module.ccall('clear_string', null, [], []);
       if (cif_str[0] == 'E') {
@@ -76,8 +79,9 @@
       Module.print('... into mmCIF (' + cif_str.length + ' bytes).');
       var now = new Date();
       var version = Module.ccall('get_version', 'string', [], []);
-      Module.print((now - start) + ' ms elapsed. Powered by GEMMI v' +
-                   version + '.\n');
+      var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
+      Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb +
+                   ' MB.\nPowered by GEMMI v' + version + '.\n');
       link.download = 'converted.cif';
       var blob = new Blob([cif_str], {type: 'text/plain'});
       link.href = window.URL.createObjectURL(blob);

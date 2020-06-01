@@ -8,6 +8,8 @@
 #include <gemmi/to_mmcif.hpp>  // for update_cif_block
 #include <gemmi/remarks.hpp>   // for read_metadata_from_remarks
 #include <gemmi/version.hpp>   // for GEMMI_VERSION
+#include <gemmi/mtz.hpp>       // for Mtz
+#include <gemmi/mtz2cif.hpp>   // for MtzToCif
 
 std::string global_str;
 
@@ -24,15 +26,29 @@ const char* pdb2cif(char* data, size_t size) {
     if (!st.models.empty() && !st.models[0].chains.empty()) {
       gemmi::read_metadata_from_remarks(st);
       setup_entities(st);
-      gemmi::cif::Document doc;
-      doc.blocks.resize(1);
-      gemmi::update_cif_block(st, doc.blocks[0], true);
       std::ostringstream os;
-      write_cif_to_stream(os, doc, gemmi::cif::Style::PreferPairs);
+      gemmi::cif::write_cif_to_stream(os, gemmi::make_mmcif_document(st),
+                                      gemmi::cif::Style::PreferPairs);
       global_str = os.str();
     } else {
       global_str = "ERROR: probably it is not a PDB file.";
     }
+  } catch (std::runtime_error& e) {
+    global_str = "ERROR: ";
+    global_str += e.what();
+  }
+  return global_str.c_str();
+}
+
+const char* mtz2cif(char* data, size_t size) {
+  try {
+    gemmi::Mtz mtz;
+    mtz.read_stream(gemmi::MemoryStream(data, data + size), true);
+    std::free(data);
+    std::ostringstream os;
+    gemmi::MtzToCif mtz_to_cif;
+    mtz_to_cif.write_cif(mtz, os);
+    global_str = os.str();
   } catch (std::runtime_error& e) {
     global_str = "ERROR: ";
     global_str += e.what();

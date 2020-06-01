@@ -1,2 +1,2 @@
 
-* pdb2cif - converts PDB files to PDBx/mmCIF format
+* to_mmcif - converts PDB and MTZ files to PDBx/mmCIF format
