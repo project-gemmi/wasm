@@ -1,4 +1,5 @@
-// Convert pdb file from BUSTER to mmCIF file for deposition.
+// Convert either pdb file (in particular BUSTER output)
+// or MTZ file (merged or unmerged) to mmCIF.
 
 #include <cstdlib>
 #include <sstream>
@@ -10,6 +11,7 @@
 #include <gemmi/version.hpp>   // for GEMMI_VERSION
 #include <gemmi/mtz.hpp>       // for Mtz
 #include <gemmi/mtz2cif.hpp>   // for MtzToCif
+#include <gemmi/align.hpp>     // for assign_label_seq_id
 
 std::string global_str;
 
@@ -25,7 +27,8 @@ const char* pdb2cif(char* data, size_t size) {
     std::free(data);
     if (!st.models.empty() && !st.models[0].chains.empty()) {
       gemmi::read_metadata_from_remarks(st);
-      setup_entities(st);
+      gemmi::setup_entities(st);
+      gemmi::assign_label_seq_id(st, false);
       std::ostringstream os;
       gemmi::cif::write_cif_to_stream(os, gemmi::make_mmcif_document(st),
                                       gemmi::cif::Style::PreferPairs);
@@ -48,7 +51,7 @@ const char* mtz2cif(char* data, size_t size) {
     mtz.switch_to_original_hkl();
     std::ostringstream os;
     gemmi::MtzToCif mtz_to_cif;
-    mtz_to_cif.write_cif(mtz, os);
+    mtz_to_cif.write_cif(mtz, nullptr, os);
     global_str = os.str();
   } catch (std::runtime_error& e) {
     global_str = "ERROR: ";
