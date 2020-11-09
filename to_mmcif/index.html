@@ -2,7 +2,7 @@
 <html>
  <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>pdb->mmcif</title>
+  <title>pdb->mmcif or mtz->mmcif</title>
   <style>
    html { background-color: #f8f8f8; color: #111; }
    body { font-family: sans-serif; line-height: 1.6; padding: 5px 15px; }
@@ -24,7 +24,10 @@
   <form>
    <p>
     To start, select either PDB or MTZ file from disk.
-    <input id="fileInput" type="file" onchange="read_file()" disabled>
+    <input id="fileInput" type="file" multiple onchange="read_file()" disabled>
+    <br/>
+    <small>To convert two MTZ files (merged and unmerged) together,
+           press Ctrl to select two files.</small>
    </p>
   </form>
   <textarea class="emscripten" id="output" rows="8" cols="72"></textarea>
@@ -62,25 +65,59 @@
   function read_file() {
     var start = new Date();
     message.hidden = true;
-    if (!fileInput || fileInput.files.length !== 1) return;
+    if (!fileInput || fileInput.files.length === 0) return;
     var f = fileInput.files[0];
+    var f2 = null;
     var is_mtz = f.name.toLowerCase().endsWith('.mtz');
-    Module.print('Converting ' + (is_mtz ? 'MTZ' : 'PDB') + ' file ' + f.name +
-                 ' (' + f.size + ' bytes)...');
+    if (is_mtz && fileInput.files.length === 2) {
+      f2 = fileInput.files[1];
+      Module.print('Converting MTZ files ' + f.name + ' (' + f.size + ' bytes) and ' +
+                   f2.name + ' (' + f2.size + ' bytes)...');
+    } else if (fileInput.files.length > 1) {
+      Module.print('Two many files selected. Try again.')
+      return;
+    } else {
+      Module.print('Converting ' + (is_mtz ? 'MTZ' : 'PDB') + ' file ' + f.name +
+                   ' (' + f.size + ' bytes)...');
+    }
     var reader = new FileReader();
+    var reader2 = null;
+    var args = null;
+    if (f2) {
+      reader2 = new FileReader();
+      reader2.onload = function(evt) {
+        var arr = new Uint8Array(evt.target.result);
+        var buffer = Module._malloc(arr.length);
+        Module.writeArrayToMemory(arr, buffer);
+        args.push(buffer);
+        args.push(arr.length);
+        var cif_str = Module.ccall('mtzpair2cif', 'string',
+                                   ['number', 'number', 'number', 'number'], args);
+        var validation_str = Module.ccall('get_str2', 'string', [], []);
+        Module.print('Comparing the two input files.\n' + validation_str);
+        finalize(cif_str);
+      }
+    }
     reader.onload = function(evt) {
       var arr = new Uint8Array(evt.target.result);
       var buffer = Module._malloc(arr.length);  // to be free'd by pdb2cif
       Module.writeArrayToMemory(arr, buffer);
+      args = [buffer, arr.length];
+      if (f2) {
+        reader2.readAsArrayBuffer(f2);
+        return;
+      }
       var cif_str = Module.ccall(is_mtz ? 'mtz2cif' : 'pdb2cif',
-                                 'string', ['number', 'number'],
-                                 [buffer, arr.length]);
+                                 'string', ['number', 'number'], args);
+      finalize(cif_str);
+    };
+    function finalize(cif_str) {
       Module.ccall('clear_string', null, [], []);
       if (cif_str[0] == 'E') {
         Module.print(cif_str);
         return;
       }
-      Module.print('... into mmCIF (' + cif_str.length + ' bytes).');
+      Module.print('Resulting mmCIF file has ' + cif_str.length + ' bytes.');
       var now = new Date();
       var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
       Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb + ' MB.\n');
@@ -89,7 +126,7 @@
       link.href = window.URL.createObjectURL(blob);
       message.hidden = false;
       //link.click();
-    };
+    }
     reader.readAsArrayBuffer(f);
   }
   </script>
