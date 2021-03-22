@@ -47,7 +47,7 @@ const char* pdb2cif(char* data, size_t size) {
 const char* mtz2cif(char* data, size_t size) {
   try {
     gemmi::Mtz mtz;
-    mtz.read_stream(gemmi::MemoryStream(data, data + size), true);
+    mtz.read_stream(gemmi::MemoryStream(data, size), true);
     std::free(data);
     mtz.switch_to_original_hkl();
     std::ostringstream os;
@@ -65,23 +65,30 @@ const char* mtzpair2cif(char* data1, size_t size1,
                         char* data2, size_t size2) {
   try {
     gemmi::Mtz mtz1;
-    mtz1.read_stream(gemmi::MemoryStream(data1, data1 + size1), true);
+    mtz1.read_stream(gemmi::MemoryStream(data1, size1), true);
     std::free(data1);
 
     gemmi::Mtz mtz2;
-    mtz2.read_stream(gemmi::MemoryStream(data2, data2 + size2), true);
+    mtz2.read_stream(gemmi::MemoryStream(data2, size2), true);
     std::free(data2);
 
+    if (mtz1.is_merged() && mtz2.is_merged())
+      gemmi::fail("two merged MTZ files given");
+    if (!mtz1.is_merged() && !mtz2.is_merged())
+      gemmi::fail("two unmerged MTZ files given");
+    gemmi::Mtz& merged = mtz1.is_merged() ? mtz1 : mtz2;
+    gemmi::Mtz& unmerged = mtz1.is_merged() ? mtz2 : mtz1;
+
     std::ostringstream validate_out;
-    validate_merged_intensities(mtz1, mtz2, validate_out);
+    gemmi::Intensities mi = gemmi::read_mean_intensities_from_mtz(merged);
+    validate_merged_intensities(unmerged, mi, validate_out);
     global_str2 = validate_out.str();
 
-    mtz1.switch_to_original_hkl();
-    mtz2.switch_to_original_hkl();
+    unmerged.switch_to_original_hkl();
 
     std::ostringstream os;
     gemmi::MtzToCif mtz_to_cif;
-    mtz_to_cif.write_cif(mtz1, &mtz2, os);
+    mtz_to_cif.write_cif(merged, &unmerged, os);
     global_str = os.str();
   } catch (std::runtime_error& e) {
     global_str = "ERROR: ";
