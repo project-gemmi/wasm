@@ -1,0 +1,27 @@
+CXX = em++
+
+INCLUDE = -I../../gemmi/include
+
+FLAGS = \
+  -Os -Wall -Wextra -std=c++20 \
+  -s WASM=1 \
+  -s STRICT=1 \
+  -s DISABLE_EXCEPTION_CATCHING=0 \
+  -s ALLOW_MEMORY_GROWTH=1
+
+LINK_FLAGS = \
+  -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory"]' \
+  -s 'EXPORTED_FUNCTIONS=[]'
+
+OBJS = pdb2cif.o
+
+convert.js: $(OBJS)
+	$(CXX) $(FLAGS) $(LINK_FLAGS) $(OBJS) -o $@
+
+%.o: %.cpp
+	$(CXX) $(INCLUDE) $(FLAGS) -c $<
+
+clean:
+	rm -f *.o *.js *.wasm
+
+.PHONY: clean

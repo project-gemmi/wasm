@@ -12,17 +12,18 @@
 #include <gemmi/mtz.hpp>       // for Mtz
 #include <gemmi/mtz2cif.hpp>   // for MtzToCif
 #include <gemmi/align.hpp>     // for assign_label_seq_id
+#include <emscripten/emscripten.h>
 
 std::string global_str;
 std::string global_str2;
 
 extern "C" {
 
-const char* get_version() {
+const char* EMSCRIPTEN_KEEPALIVE get_version() {
   return GEMMI_VERSION;
 }
 
-const char* pdb2cif(char* data, size_t size) {
+const char* EMSCRIPTEN_KEEPALIVE pdb2cif(char* data, size_t size) {
   try {
     gemmi::Structure st = gemmi::read_pdb_from_memory(data, size, "input.pdb");
     std::free(data);
@@ -44,7 +45,7 @@ const char* pdb2cif(char* data, size_t size) {
   return global_str.c_str();
 }
 
-const char* mtz2cif(char* data, size_t size) {
+const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
   try {
     gemmi::Mtz mtz;
     mtz.read_stream(gemmi::MemoryStream(data, size), true);
@@ -61,8 +62,8 @@ const char* mtz2cif(char* data, size_t size) {
   return global_str.c_str();
 }
 
-const char* mtzpair2cif(char* data1, size_t size1,
-                        char* data2, size_t size2) {
+const char* EMSCRIPTEN_KEEPALIVE mtzpair2cif(char* data1, size_t size1,
+                                             char* data2, size_t size2) {
   try {
     gemmi::Mtz mtz1;
     mtz1.read_stream(gemmi::MemoryStream(data1, size1), true);
@@ -97,11 +98,11 @@ const char* mtzpair2cif(char* data1, size_t size1,
   return global_str.c_str();
 }
 
-const char* get_str2() {
+const char* EMSCRIPTEN_KEEPALIVE get_str2() {
   return global_str2.c_str();
 }
 
-void clear_string() {
+void EMSCRIPTEN_KEEPALIVE clear_string() {
   global_str.clear();
   global_str2.clear();
 }
