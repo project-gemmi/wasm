@@ -13,7 +13,7 @@ LINK_FLAGS = \
   -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory"]' \
   -s 'EXPORTED_FUNCTIONS=[]'
 
-OBJS = pdb2cif.o
+OBJS = to_cif.o utils.o write.o cif2pdb.o
 
 convert.js: $(OBJS)
 	$(CXX) $(FLAGS) $(LINK_FLAGS) $(OBJS) -o $@

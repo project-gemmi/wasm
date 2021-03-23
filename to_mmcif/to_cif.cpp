@@ -3,25 +3,19 @@
 
 #include <cstdlib>
 #include <sstream>
-#define GEMMI_WRITE_IMPLEMENTATION
 #include <gemmi/pdb.hpp>
-#include <gemmi/to_cif.hpp>
+#include <gemmi/to_cif.hpp>    // for write_cif_to_stream
 #include <gemmi/to_mmcif.hpp>  // for update_cif_block
 #include <gemmi/remarks.hpp>   // for read_metadata_from_remarks
-#include <gemmi/version.hpp>   // for GEMMI_VERSION
 #include <gemmi/mtz.hpp>       // for Mtz
 #include <gemmi/mtz2cif.hpp>   // for MtzToCif
 #include <gemmi/align.hpp>     // for assign_label_seq_id
 #include <emscripten/emscripten.h>
 
-std::string global_str;
-std::string global_str2;
+extern std::string global_str;
+extern std::string global_str2;
 
 extern "C" {
-
-const char* EMSCRIPTEN_KEEPALIVE get_version() {
-  return GEMMI_VERSION;
-}
 
 const char* EMSCRIPTEN_KEEPALIVE pdb2cif(char* data, size_t size) {
   try {
@@ -96,15 +90,6 @@ const char* EMSCRIPTEN_KEEPALIVE mtzpair2cif(char* data1, size_t size1,
     global_str += e.what();
   }
   return global_str.c_str();
-}
-
-const char* EMSCRIPTEN_KEEPALIVE get_str2() {
-  return global_str2.c_str();
-}
-
-void EMSCRIPTEN_KEEPALIVE clear_string() {
-  global_str.clear();
-  global_str2.clear();
 }
 
 } // extern "C"
