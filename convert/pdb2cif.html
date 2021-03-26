@@ -1,0 +1,94 @@
+<!doctype html>
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>PDB ➜  mmCIF converter</title>
+  <link rel="stylesheet" href="../style.css">
+ </head>
+ <body>
+  <nav><a href="../">◀ contents</a></nav>
+  <h1>PDB ➜  mmCIF converter</h1>
+  <div id="sub">
+   This page can convert files inside your web browser,<br>
+   which must be recent enough (from 2018 or later).<br>
+   Once this page is loaded, no server is contacted.<br>
+  </div>
+  <form>
+   <p>
+    Select PDB file &nbsp;
+    <input id="fileInput" type="file" onchange="read_file()" disabled>
+   </p>
+  </form>
+  <textarea class="emscripten" id="output" rows="10" cols="72"></textarea>
+  <p id="pget">&nbsp;<a id="get" hidden>Download mmCIF</a>&nbsp;</p>
+  <hr>
+  <div id="footer">
+   This tool is based on <a href="https://project-gemmi.github.io/">GEMMI</a>.
+   For technical details see the
+   <a href="https://github.com/project-gemmi/wasm">source code repository</a>.
+   <br/>GEMMI is funded by CCP4 and Global Phasing Ltd.
+  </div>
+  <script type='text/javascript'>
+  var fileInput = document.getElementById('fileInput');
+  var link = document.getElementById('get');
+  var element = document.getElementById('output');
+
+  var Module = {
+    print: function(text) {
+      console.log(text);
+      element.value += text + '\n';
+      element.scrollTop = element.scrollHeight; // focus on bottom
+    },
+    setStatus: function(text) {
+      Module.print(text);
+      if (text === '') fileInput.disabled = false;
+    },
+    onRuntimeInitialized: function() {
+      var version = Module.ccall('get_version', 'string', [], []);
+      Module.print('Powered by GEMMI v' + version + '.');
+    }
+  };
+  Module['printErr'] = Module['print'];
+
+  Module.print('Downloading the converter...');
+  window.onerror = function() {
+    Module.print('Exception thrown, see JavaScript console');
+  };
+
+  function read_file() {
+    var start = new Date();
+    link.hidden = true;
+    if (!fileInput || fileInput.files.length === 0) return;
+    var f = fileInput.files[0];
+    Module.print('Converting PDB file ' + f.name + ' (' + f.size + ' bytes)...');
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      var arr = new Uint8Array(evt.target.result);
+      var buffer = Module._malloc(arr.length);  // to be free'd in convert.js
+      Module.writeArrayToMemory(arr, buffer);
+      var ret = Module.ccall('pdb2cif', 'string', ['number', 'number'],
+                             [buffer, arr.length]);
+      finalize(ret);
+    };
+    function finalize(ret) {
+      Module.ccall('clear_string', null, [], []);
+      if (ret[0] == 'E') {
+        Module.print(ret);
+        return;
+      }
+      Module.print('Resulting mmCIF file has ' + ret.length + ' bytes.');
+      var now = new Date();
+      var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
+      Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb + ' MB.\n');
+      link.download = f.name.substr(0, f.name.lastIndexOf('.')) + '.cif';
+      var blob = new Blob([ret], {type: 'text/plain'});
+      link.href = window.URL.createObjectURL(blob);
+      link.hidden = false;
+      //link.click();
+    }
+    reader.readAsArrayBuffer(f);
+  }
+  </script>
+  <script type="text/javascript" src="convert.js"></script>
+ </body>
+</html>

@@ -1,5 +1,6 @@
 CXX = em++
 
+# path to the include directory in the gemmi repo
 INCLUDE = -I../../gemmi/include
 
 FLAGS = \

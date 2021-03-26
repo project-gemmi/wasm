@@ -1,3 +1,37 @@
 <!doctype html>
 <html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>GEMMI tools in WebAssembly</title>
+  <link rel="stylesheet" href="style.css">
+ </head>
+ <body>
+  <h1>GEMMI tools in web browser</h1>
+  <div id="sub">
+   The server is contacted only to download the pages.<br>
+   All the computations are done in your web browser,<br>
+   which must be recent enough (from 2018 or later).
+  </div>
+  <h2>Converters</h2>
+  <h4>Coordinate files</h4>
+  <ul class="index">
+   <li><a href="convert/pdb2cif.html">PDB ➜  mmCIF</a>
+   <li><a href="convert/cif2pdb.html">mmCIF ➜  PDB</a>
+  </ul>
+  <h4>Reflection files</h4>
+  <ul class="index">
+   <!--
+   <li><a href="convert/cif2mtz.html">mmCIF ➜  MTZ</a>
+   -->
+   <li><a href="convert/mtz2cif.html">MTZ ➜  mmCIF</a>
+   <li><a href="convert/mtz2depo.html">2 × MTZ ➜  mmCIF (deposition-ready)</a>
+  </ul>
+  <hr>
+  <div id="footer">
+  These tools are based on <a href="https://project-gemmi.github.io/">GEMMI</a>.
+  For technical details see the
+  <a href="https://github.com/project-gemmi/wasm">source code repository</a>.
+  <br/>GEMMI is funded by CCP4 and Global Phasing Ltd.
+  </div>
+ </body>
 </html>

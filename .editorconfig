@@ -5,3 +5,7 @@ root = true
 [*.{cpp,hpp,f90}]
 indent_style = space
 indent_size = 2
+
+[*.{html,css}]
+indent_style = space
+indent_size = 1
