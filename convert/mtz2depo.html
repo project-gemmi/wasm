@@ -14,22 +14,24 @@
    Once this page is loaded, no server is contacted.<br>
   </div>
   <ul class="rules">
-   <li>Merged file must contain intensities – either &lt;I> or I(+)/I(-);<br>
-       if amplitudes were used for refinement they should also be there.
+   <li>Merged file must contain intensities – either &lt;I> or I(+)/I(-),<br>
+       amplitudes (if used for refinement) and free-set flags.
    <li>Unmerged data must be scaled.
    <li>Both files must have the same space group settings.
        In the future, this app may recognize compatible space groups and
        reindex unmerged data if needed. For now, it's on you.
-   <li>Unit cells parameters in both files must be (almost) identical;<br>
-       intensities should be highly correlated.
-   <li>Send comments, suggestions, bug reports, complex cases to wojdyr@gmail.com<br>
+   <li>Unit cells parameters in both files must be (almost) identical.
+   <li>Merged intensities are verified assuming they were merged with 1/σ² weights.
+   <li>If your files are different, or if you have comments, suggestions,
+    problems to report – either send <a href="mailto:wojdyr@gmail.com">email</a> or
+    <a href="https://github.com/project-gemmi/gemmi/discussions/categories/about-wwpdb-depositions">discuss</a> it publicly.
   </ul>
   <form>
    <p>
     Select merged MTZ file &nbsp;
     <input id="fileInput" type="file" onchange="read_file()" disabled>
    <p>
-    Select unmerged MTZ file &nbsp;
+    Select scaled unmerged MTZ file &nbsp;
     <input id="fileInput2" type="file" onchange="read_file()" disabled>
   </form>
   <textarea class="emscripten" id="output" rows="10"></textarea>
