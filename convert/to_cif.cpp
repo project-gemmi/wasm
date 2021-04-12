@@ -41,13 +41,20 @@ const char* EMSCRIPTEN_KEEPALIVE pdb2cif(char* data, size_t size) {
 
 const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
   try {
-    gemmi::Mtz mtz;
-    mtz.read_stream(gemmi::MemoryStream(data, size), true);
-    std::free(data);
-    mtz.switch_to_original_hkl();
     std::ostringstream os;
     gemmi::MtzToCif mtz_to_cif;
-    mtz_to_cif.write_cif(mtz, nullptr, os);
+    if (size > 17 && strncmp(data, "!FORMAT=XDS_ASCII", 17) == 0) {
+      gemmi::XdsAscii xds_ascii;
+      xds_ascii.read_stream(gemmi::MemoryStream(data, size), "<input>");
+      std::free(data);
+      mtz_to_cif.write_cif_from_xds(xds_ascii, os);
+    } else {
+      gemmi::Mtz mtz;
+      mtz.read_stream(gemmi::MemoryStream(data, size), true);
+      std::free(data);
+      mtz.switch_to_original_hkl();
+      mtz_to_cif.write_cif(mtz, nullptr, os);
+    }
     global_str = os.str();
   } catch (std::runtime_error& e) {
     global_str = "ERROR: ";
@@ -56,34 +63,65 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
   return global_str.c_str();
 }
 
-const char* EMSCRIPTEN_KEEPALIVE mtzpair2cif(char* data1, size_t size1,
-                                             char* data2, size_t size2) {
+const char* EMSCRIPTEN_KEEPALIVE mtz2depo(char* data1, size_t size1,
+                                          char* data2, size_t size2) {
   try {
-    gemmi::Mtz mtz1;
-    mtz1.read_stream(gemmi::MemoryStream(data1, size1), true);
+    std::unique_ptr<gemmi::Mtz> mtz1, mtz2;
+    std::unique_ptr<gemmi::XdsAscii> xds_ascii;
+    mtz1.reset(new gemmi::Mtz);
+    mtz1->read_stream(gemmi::MemoryStream(data1, size1), true);
     std::free(data1);
 
-    gemmi::Mtz mtz2;
-    mtz2.read_stream(gemmi::MemoryStream(data2, size2), true);
+    if (data2[0] == 'M') {
+      mtz2.reset(new gemmi::Mtz);
+      mtz2->read_stream(gemmi::MemoryStream(data2, size2), true);
+      if (!mtz1->is_merged() && mtz2->is_merged())
+        mtz1.swap(mtz2);
+    } else if (data2[0] == '!') {
+      xds_ascii.reset(new gemmi::XdsAscii);
+      xds_ascii->read_stream(gemmi::MemoryStream(data2, size2), "<input>");
+    }
     std::free(data2);
 
-    if (mtz1.is_merged() && mtz2.is_merged())
-      gemmi::fail("two merged MTZ files given");
-    if (!mtz1.is_merged() && !mtz2.is_merged())
-      gemmi::fail("two unmerged MTZ files given");
-    gemmi::Mtz& merged = mtz1.is_merged() ? mtz1 : mtz2;
-    gemmi::Mtz& unmerged = mtz1.is_merged() ? mtz2 : mtz1;
+    if (mtz2 && mtz2->is_merged())
+      gemmi::fail("the second file should not be merged");
+    if (!mtz1->is_merged())
+      gemmi::fail("the first file is not merged");
 
-    std::ostringstream validate_out;
-    gemmi::Intensities mi = gemmi::read_mean_intensities_from_mtz(merged);
-    validate_merged_intensities(unmerged, mi, validate_out);
-    global_str2 = validate_out.str();
+    bool ok = true;
+    try {
+      std::ostringstream validate_out;
+      gemmi::Intensities mi, ui;
+      mi = gemmi::read_mean_intensities_from_mtz(*mtz1);
+      if (mtz2) {
+        ui = gemmi::read_unmerged_intensities_from_mtz(*mtz2);
+      } else if (xds_ascii) {
+        ui = gemmi::read_unmerged_intensities_from_xds(*xds_ascii);
+      }
+      ok = gemmi::validate_merged_intensities(mi, ui, validate_out);
+      global_str2 = validate_out.str();
+    } catch (std::runtime_error& e) {
+      global_str2 = "Intensity merging not validated: ";
+      global_str2 += e.what();
+      ok = false;
+    }
+    if (!ok)
+      return "Error. If you think the files are correct, contact us.";
 
-    unmerged.switch_to_original_hkl();
+    if (mtz2)
+      mtz2->switch_to_original_hkl();
 
     std::ostringstream os;
     gemmi::MtzToCif mtz_to_cif;
-    mtz_to_cif.write_cif(merged, &unmerged, os);
+    mtz_to_cif.write_special_marker_for_pdb = true;
+    mtz_to_cif.with_history = false;
+    mtz_to_cif.write_cif(*mtz1, nullptr, os);
+    os << "\n\n";
+    mtz_to_cif.block_name = "unmerged";
+    if (mtz2)
+      mtz_to_cif.write_cif(*mtz2, nullptr, os);
+    else if (xds_ascii)
+      mtz_to_cif.write_cif_from_xds(*xds_ascii, os);
     global_str = os.str();
   } catch (std::runtime_error& e) {
     global_str = "ERROR: ";

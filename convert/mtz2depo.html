@@ -7,7 +7,7 @@
  </head>
  <body>
   <nav><a href="../">◀ contents</a></nav>
-  <h1>2 × MTZ ➜  mmCIF for deposition</h1>
+  <h1>merged MTZ + unmerged data ➜  mmCIF for deposition</h1>
   <div id="sub">
    This page can convert files inside your web browser,<br>
    which must be recent enough (from 2018 or later).<br>
@@ -20,18 +20,18 @@
    <li>Both files must have the same space group settings.
        In the future, this app may recognize compatible space groups and
        reindex unmerged data if needed. For now, it's on you.
-   <li>Unit cells parameters in both files must be (almost) identical.
+   <li>Both files must have the same unit cells parameters.
    <li>Merged intensities are verified assuming they were merged with 1/σ² weights.
-   <li>If your files are different, or if you have comments, suggestions,
+   <li>If your files are more complex, or if you have comments, suggestions,
     problems to report – either send <a href="mailto:wojdyr@gmail.com">email</a> or
-    <a href="https://github.com/project-gemmi/gemmi/discussions/categories/about-wwpdb-depositions">discuss</a> it publicly.
+    <a href="https://github.com/project-gemmi/gemmi/discussions/categories/about-wwpdb-depositions">discuss</a> it publicly. &nbsp; <b class="caps">← contact</b>
   </ul>
   <form>
    <p>
-    Select merged MTZ file &nbsp;
+    Merged MTZ file: &nbsp;
     <input id="fileInput" type="file" onchange="read_file()" disabled>
    <p>
-    Select scaled unmerged MTZ file &nbsp;
+    Scaled unmerged MTZ or XDS_ASCII file: &nbsp;
     <input id="fileInput2" type="file" onchange="read_file()" disabled>
   </form>
   <textarea class="emscripten" id="output" rows="10"></textarea>
@@ -96,7 +96,7 @@
       Module.writeArrayToMemory(arr, buffer);
       args.push(buffer);
       args.push(arr.length);
-      var ret = Module.ccall('mtzpair2cif', 'string',
+      var ret = Module.ccall('mtz2depo', 'string',
                              ['number', 'number', 'number', 'number'], args);
       var validation_str = Module.ccall('get_str2', 'string', [], []);
       Module.print('Comparing the two input files.\n' + validation_str);

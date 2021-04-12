@@ -14,6 +14,7 @@ h4 { margin-bottom: 10px; }
 ul.index { list-style: square; margin-top: 10px; }
 ul.rules { font-size: 16px; }
 form { margin-top: 20px; }
+.caps { font-variant-caps: small-caps; }
 textarea {
  background-color: #eee8d5;
  color: #002b36;
