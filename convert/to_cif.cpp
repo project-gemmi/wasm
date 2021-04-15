@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <gemmi/pdb.hpp>
+#include <gemmi/cif.hpp>       // for cif::read_memory
 #include <gemmi/to_cif.hpp>    // for write_cif_to_stream
 #include <gemmi/to_mmcif.hpp>  // for update_cif_block
 #include <gemmi/remarks.hpp>   // for read_metadata_from_remarks
@@ -63,36 +64,47 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
   return global_str.c_str();
 }
 
-const char* EMSCRIPTEN_KEEPALIVE mtz2depo(char* data1, size_t size1,
-                                          char* data2, size_t size2) {
+const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
+                                        char* data2, size_t size2) {
   try {
     std::unique_ptr<gemmi::Mtz> mtz1, mtz2;
     std::unique_ptr<gemmi::XdsAscii> xds_ascii;
-    mtz1.reset(new gemmi::Mtz);
-    mtz1->read_stream(gemmi::MemoryStream(data1, size1), true);
-    std::free(data1);
+
+    if (data1[0] == 'M') {
+      mtz1.reset(new gemmi::Mtz);
+      mtz1->read_stream(gemmi::MemoryStream(data1, size1), true);
+      std::free(data1);
+    }
 
     if (data2[0] == 'M') {
       mtz2.reset(new gemmi::Mtz);
       mtz2->read_stream(gemmi::MemoryStream(data2, size2), true);
-      if (!mtz1->is_merged() && mtz2->is_merged())
+      if (mtz1 && !mtz1->is_merged() && mtz2->is_merged())
         mtz1.swap(mtz2);
     } else if (data2[0] == '!') {
       xds_ascii.reset(new gemmi::XdsAscii);
       xds_ascii->read_stream(gemmi::MemoryStream(data2, size2), "<input>");
+    } else {
+      gemmi::fail("the second file is neither MTZ nor XDS_ASCII");
     }
     std::free(data2);
 
+    if (mtz1 && !mtz1->is_merged())
+      gemmi::fail("the first file is not merged");
     if (mtz2 && mtz2->is_merged())
       gemmi::fail("the second file should not be merged");
-    if (!mtz1->is_merged())
-      gemmi::fail("the first file is not merged");
 
     bool ok = true;
     try {
       std::ostringstream validate_out;
       gemmi::Intensities mi, ui;
-      mi = gemmi::read_mean_intensities_from_mtz(*mtz1);
+      if (mtz1) {
+        mi = gemmi::read_mean_intensities_from_mtz(*mtz1);
+      } else {
+        gemmi::ReflnBlock rblock = gemmi::get_refln_block(
+            gemmi::cif::read_memory(data1, size1, "<input>").blocks, {});
+        mi = gemmi::read_mean_intensities_from_mmcif(rblock);
+      }
       if (mtz2) {
         ui = gemmi::read_unmerged_intensities_from_mtz(*mtz2);
       } else if (xds_ascii) {
@@ -115,7 +127,10 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2depo(char* data1, size_t size1,
     gemmi::MtzToCif mtz_to_cif;
     mtz_to_cif.write_special_marker_for_pdb = true;
     mtz_to_cif.with_history = false;
-    mtz_to_cif.write_cif(*mtz1, nullptr, os);
+    if (mtz1)
+      mtz_to_cif.write_cif(*mtz1, nullptr, os);
+    else
+      os.write(data1, size1);
     os << "\n\n";
     mtz_to_cif.block_name = "unmerged";
     if (mtz2)

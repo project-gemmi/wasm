@@ -4,7 +4,7 @@ CXX = em++
 INCLUDE = -I../../gemmi/include
 
 FLAGS = \
-  -Os -Wall -Wextra -std=c++20 \
+  -Os -flto -Wall -Wextra -std=c++20 \
   -s WASM=1 \
   -s STRICT=1 \
   -s DISABLE_EXCEPTION_CATCHING=0 \
