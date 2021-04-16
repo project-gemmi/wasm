@@ -45,7 +45,7 @@
     },
     onRuntimeInitialized: function() {
       var version = Module.ccall('get_version', 'string', [], []);
-      Module.print('Powered by GEMMI v' + version + '.');
+      Module.print('Powered by GEMMI ' + version + '.');
     }
   };
   Module['printErr'] = Module['print'];
