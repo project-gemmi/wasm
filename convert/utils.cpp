@@ -9,7 +9,7 @@ std::string global_str2;
 extern "C" {
 
 const char* EMSCRIPTEN_KEEPALIVE get_version() {
-  return GEMMI_DESCRIBE;
+  return GEMMI_DESCRIBE " (compiled on " __DATE__ ")";
 }
 
 const char* EMSCRIPTEN_KEEPALIVE get_str2() {
