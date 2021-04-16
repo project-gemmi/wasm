@@ -1,5 +1,6 @@
 #include <string>
-#include <gemmi/version.hpp>   // for GEMMI_VERSION
+//#include <gemmi/version.hpp>   // for GEMMI_VERSION
+#include "describe.h"
 #include <emscripten/emscripten.h>
 
 std::string global_str;
@@ -8,7 +9,7 @@ std::string global_str2;
 extern "C" {
 
 const char* EMSCRIPTEN_KEEPALIVE get_version() {
-  return GEMMI_VERSION;
+  return GEMMI_DESCRIBE;
 }
 
 const char* EMSCRIPTEN_KEEPALIVE get_str2() {

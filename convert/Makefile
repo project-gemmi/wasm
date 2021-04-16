@@ -1,7 +1,8 @@
 CXX = em++
 
 # path to the include directory in the gemmi repo
-INCLUDE = -I../../gemmi/include
+GEMMI_DIR=../../gemmi
+INCLUDE = -I$(GEMMI_DIR)/include
 
 FLAGS = \
   -Os -flto -Wall -Wextra -std=c++20 \
@@ -19,10 +20,14 @@ OBJS = to_cif.o utils.o write.o cif2pdb.o
 convert.js: $(OBJS)
 	$(CXX) $(FLAGS) $(LINK_FLAGS) $(OBJS) -o $@
 
-%.o: %.cpp
+describe.h:
+	echo -n '#define GEMMI_DESCRIBE "' >$@
+	git -C $(GEMMI_DIR) describe | sed 's/$$/"/' >> $@
+
+%.o: %.cpp describe.h
 	$(CXX) $(INCLUDE) $(FLAGS) -c $<
 
 clean:
-	rm -f *.o *.js *.wasm
+	rm -f *.o *.js *.wasm describe.h
 
 .PHONY: clean
