@@ -95,6 +95,12 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       gemmi::fail("the second file should not be merged");
 
     bool ok = true;
+    global_str2.clear();
+    if (mtz1) {
+      std::ostringstream out;
+      ok = gemmi::validate_merged_mtz_deposition_columns(*mtz1, out);
+      global_str2 = out.str();
+    }
     try {
       std::ostringstream validate_out;
       gemmi::Intensities mi, ui;
@@ -110,10 +116,10 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       } else if (xds_ascii) {
         ui = gemmi::read_unmerged_intensities_from_xds(*xds_ascii);
       }
-      ok = gemmi::validate_merged_intensities(mi, ui, validate_out);
-      global_str2 = validate_out.str();
+      ok = gemmi::validate_merged_intensities(mi, ui, validate_out) && ok;
+      global_str2 += validate_out.str();
     } catch (std::runtime_error& e) {
-      global_str2 = "Intensity merging not validated: ";
+      global_str2 += "Intensity merging not validated: ";
       global_str2 += e.what();
       ok = false;
     }
