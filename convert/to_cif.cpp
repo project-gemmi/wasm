@@ -84,6 +84,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     } else if (data2[0] == '!') {
       xds_ascii.reset(new gemmi::XdsAscii);
       xds_ascii->read_stream(gemmi::MemoryStream(data2, size2), "<input>");
+      xds_ascii->set_frame_counts();
     } else {
       gemmi::fail("the second file is neither MTZ nor XDS_ASCII");
     }
@@ -111,16 +112,12 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
             gemmi::cif::read_memory(data1, size1, "<input>").blocks, {});
         mi = gemmi::read_mean_intensities_from_mmcif(rblock);
       }
-      std::unique_ptr<gemmi::UnitCell> avg_unmerged_cell;
-      if (mtz2) {
+      if (mtz2)
         ui = gemmi::read_unmerged_intensities_from_mtz(*mtz2);
-        avg_unmerged_cell.reset(new gemmi::UnitCell(
-              mtz2->get_average_cell_from_batch_headers()));
-      } else if (xds_ascii) {
+      else if (xds_ascii)
         ui = gemmi::read_unmerged_intensities_from_xds(*xds_ascii);
-      }
-      ok = gemmi::validate_merged_intensities(mi, ui, avg_unmerged_cell.get(), validate_out)
-           && ok;
+      if (!gemmi::validate_merged_intensities(mi, ui, validate_out))
+        ok = false;
       global_str2 += validate_out.str();
     } catch (std::runtime_error& e) {
       global_str2 += "Intensity merging not validated: ";
