@@ -84,7 +84,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     } else if (data2[0] == '!') {
       xds_ascii.reset(new gemmi::XdsAscii);
       xds_ascii->read_stream(gemmi::MemoryStream(data2, size2), "<input>");
-      xds_ascii->set_frame_counts();
+      xds_ascii->gather_iset_statistics();
     } else {
       gemmi::fail("the second file is neither MTZ nor XDS_ASCII");
     }
