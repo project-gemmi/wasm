@@ -12,7 +12,7 @@ FLAGS = \
   -s ALLOW_MEMORY_GROWTH=1
 
 LINK_FLAGS = \
-  -s 'EXTRA_EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory"]' \
+  -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory"]' \
   -s 'EXPORTED_FUNCTIONS=[]'
 
 OBJS = to_cif.o utils.o write.o cif2pdb.o
