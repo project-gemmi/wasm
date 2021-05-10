@@ -9,7 +9,7 @@ h1, #sub, #footer { text-align: center; color: #456; }
 #footer { font-size: 14px; line-height: 1.5; }
 p#pget { text-align: center; margin-top: 30px; }
 a#get { background-color: #859900; color: #fff; padding: 12px 18px; border-radius: 8px;
-        font-weight: bold; }
+        font-weight: bold; box-shadow: 1px 1px 1px #93a1a1; }
 h4 { margin-bottom: 10px; }
 ul.index { list-style: square; margin-top: 10px; }
 ul.rules { font-size: 16px; }

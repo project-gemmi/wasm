@@ -21,4 +21,8 @@ void EMSCRIPTEN_KEEPALIVE clear_string() {
   global_str2.clear();
 }
 
+size_t EMSCRIPTEN_KEEPALIVE get_global_str_size() {
+  return global_str.size();
+}
+
 } // extern "C"

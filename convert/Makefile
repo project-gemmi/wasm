@@ -12,10 +12,10 @@ FLAGS = \
   -s ALLOW_MEMORY_GROWTH=1
 
 LINK_FLAGS = \
-  -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory"]' \
+  -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory", "getValue", "UTF8ToString"]' \
   -s 'EXPORTED_FUNCTIONS=[]'
 
-OBJS = to_cif.o utils.o write.o cif2pdb.o
+OBJS = to_cif.o from_cif.o utils.o write.o
 
 convert.js: $(OBJS)
 	$(CXX) $(FLAGS) $(LINK_FLAGS) $(OBJS) -o $@

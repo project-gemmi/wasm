@@ -45,8 +45,8 @@
       if (text === '') fileInput.disabled = false;
     },
     onRuntimeInitialized: function() {
-      var version = Module.ccall('get_version', 'string', [], []);
-      Module.print('Powered by GEMMI ' + version + '.');
+      var version = Module._get_version();
+      Module.print('Powered by GEMMI ' + Module.UTF8ToString(version) + '.');
     }
   };
   Module['printErr'] = Module['print'];
@@ -67,22 +67,23 @@
       var arr = new Uint8Array(evt.target.result);
       var buffer = Module._malloc(arr.length);  // to be free'd in convert.js
       Module.writeArrayToMemory(arr, buffer);
-      var ret = Module.ccall('mtz2cif', 'string', ['number', 'number'],
-                             [buffer, arr.length]);
+      var ret = Module._mtz2cif(buffer, arr.length);
       finalize(ret);
     };
     function finalize(ret) {
-      Module.ccall('clear_string', null, [], []);
-      if (ret[0] == 'E') {
-        Module.print(ret);
+      if (Module.getValue(ret) == 69) { // 'E' == 69
+        Module.print(Module.UTF8ToString(ret));
         return;
       }
-      Module.print('Resulting mmCIF file has ' + ret.length + ' bytes.');
+      var size = Module._get_global_str_size();
+      Module.print('Resulting mmCIF file has ' + size + ' bytes.');
+      let bufarray = new Int8Array(Module.HEAP8.buffer, ret, size);
       var now = new Date();
       var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
       Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb + ' MB.\n');
       link.download = f.name.substr(0, f.name.lastIndexOf('.')) + '.cif';
-      var blob = new Blob([ret], {type: 'text/plain'});
+      var blob = new Blob([bufarray], {type: 'text/plain'});
+      Module._clear_string();
       link.href = window.URL.createObjectURL(blob);
       link.hidden = false;
       //link.click();

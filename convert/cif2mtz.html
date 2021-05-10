@@ -2,12 +2,12 @@
 <html>
  <head>
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>mmCIF ➜  PDB converter</title>
+  <title>mmCIF ➜  MTZ converter</title>
   <link rel="stylesheet" href="../style.css">
  </head>
  <body>
   <nav><a href="../">◀ contents</a></nav>
-  <h1>mmCIF ➜  PDB converter</h1>
+  <h1>mmCIF ➜  MTZ converter</h1>
   <div id="sub">
    This page can convert files inside your web browser,<br>
    which must be recent enough (from 2018 or later).<br>
@@ -20,7 +20,7 @@
    </p>
   </form>
   <textarea class="emscripten" id="output" rows="10" cols="72"></textarea>
-  <p id="pget">&nbsp;<a id="get" hidden>Download PDB</a>&nbsp;</p>
+  <p id="pget">&nbsp;<a id="get" hidden>Download MTZ</a>&nbsp;</p>
   <hr>
   <div id="footer">
    This tool is based on <a href="https://project-gemmi.github.io/">GEMMI</a>.
@@ -67,7 +67,7 @@
       var arr = new Uint8Array(evt.target.result);
       var buffer = Module._malloc(arr.length);  // to be free'd in convert.js
       Module.writeArrayToMemory(arr, buffer);
-      var ret = Module._cif2pdb(buffer, arr.length);
+      var ret = Module._cif2mtz(buffer, arr.length);
       finalize(ret);
     };
     function finalize(ret) {
@@ -76,13 +76,13 @@
         return;
       }
       var size = Module._get_global_str_size();
-      Module.print('Resulting PDB file has ' + size + ' bytes.');
+      Module.print('Resulting MTZ file has ' + size + ' bytes.');
       let bufarray = new Int8Array(Module.HEAP8.buffer, ret, size);
       var now = new Date();
       var mb = Math.round(HEAP8.length / (1024 * 102.4)) / 10;
       Module.print((now - start) + ' ms elapsed. WASM memory: ' + mb + ' MB.\n');
-      link.download = f.name.substr(0, f.name.lastIndexOf('.')) + '.pdb';
-      var blob = new Blob([bufarray], {type: 'text/plain'});
+      link.download = f.name.substr(0, f.name.lastIndexOf('.')) + '.mtz';
+      var blob = new Blob([bufarray], {type: 'application/octet-stream'});
       Module._clear_string();
       link.href = window.URL.createObjectURL(blob);
       link.hidden = false;
