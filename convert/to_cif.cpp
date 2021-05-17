@@ -102,6 +102,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       ok = gemmi::validate_merged_mtz_deposition_columns(*mtz1, out);
       global_str2 = out.str();
     }
+    gemmi::MtzToCif mtz_to_cif;
     try {
       std::ostringstream validate_out;
       gemmi::Intensities mi, ui;
@@ -110,6 +111,12 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       } else {
         gemmi::ReflnBlock rblock = gemmi::get_refln_block(
             gemmi::cif::read_memory(data1, size1, "<input>").blocks, {});
+        if (!rblock.entry_id.empty() && rblock.entry_id != mtz_to_cif.entry_id) {
+          global_str2 += "Note: using _entry.id from mmCIF: ";
+          global_str2 += rblock.entry_id;
+          global_str2 += ".\n";
+          mtz_to_cif.entry_id = rblock.entry_id;
+        }
         mi.read_merged_intensities_from_mmcif(rblock);
       }
       if (mtz2)
@@ -132,7 +139,6 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       mtz2->switch_to_original_hkl();
 
     std::ostringstream os;
-    gemmi::MtzToCif mtz_to_cif;
     mtz_to_cif.write_special_marker_for_pdb = true;
     mtz_to_cif.with_history = false;
     mtz_to_cif.less_anomalous = 1;
