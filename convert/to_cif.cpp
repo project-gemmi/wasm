@@ -108,6 +108,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       gemmi::Intensities mi, ui;
       if (mtz1) {
         mi.read_merged_intensities_from_mtz(*mtz1);
+        mtz_to_cif.check_staraniso(*mtz1, validate_out);
       } else {
         gemmi::ReflnBlock rblock = gemmi::get_refln_block(
             gemmi::cif::read_memory(data1, size1, "<input>").blocks, {});
@@ -123,8 +124,8 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
         ui.read_unmerged_intensities_from_mtz(*mtz2);
       else if (xds_ascii)
         ui.read_unmerged_intensities_from_xds(*xds_ascii);
-      gemmi::SMat33<double> aniso_scale_b = gemmi::get_staraniso_b(mtz1.get(), validate_out);
-      if (!gemmi::validate_merged_intensities(mi, ui, aniso_scale_b, validate_out))
+      if (!gemmi::validate_merged_intensities(mi, ui, mtz_to_cif.get_staraniso_b(),
+                                              validate_out))
         ok = false;
       global_str2 += validate_out.str();
     } catch (std::runtime_error& e) {
