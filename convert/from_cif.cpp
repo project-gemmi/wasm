@@ -22,7 +22,7 @@ const char* EMSCRIPTEN_KEEPALIVE cif2pdb(char* data, size_t size) {
     } else {
       global_str = "ERROR: probably not an mmCIF file.";
     }
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     global_str = "ERROR: ";
     global_str += e.what();
   }
@@ -46,7 +46,7 @@ const char* EMSCRIPTEN_KEEPALIVE cif2mtz(char* data, size_t size) {
     } else {
       global_str = "ERROR: probably not a SF-mmCIF file.";
     }
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     global_str = "ERROR: ";
     global_str += e.what();
   }

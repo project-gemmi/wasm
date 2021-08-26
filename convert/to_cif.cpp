@@ -33,7 +33,7 @@ const char* EMSCRIPTEN_KEEPALIVE pdb2cif(char* data, size_t size) {
     } else {
       global_str = "ERROR: probably it is not a PDB file.";
     }
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     global_str = "ERROR: ";
     global_str += e.what();
   }
@@ -57,7 +57,7 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
       mtz_to_cif.write_cif(mtz, nullptr, os);
     }
     global_str = os.str();
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     global_str = "ERROR: ";
     global_str += e.what();
   }
@@ -154,7 +154,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     else if (xds_ascii)
       mtz_to_cif.write_cif_from_xds(*xds_ascii, os);
     global_str = os.str();
-  } catch (std::runtime_error& e) {
+  } catch (std::exception& e) {
     global_str = "ERROR: ";
     global_str += e.what();
   }
