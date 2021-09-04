@@ -6,14 +6,13 @@ INCLUDE = -I$(GEMMI_DIR)/include
 
 FLAGS = \
   -Os -flto -Wall -Wextra -std=c++20 \
-  -s WASM=1 \
   -s STRICT=1 \
-  -s DISABLE_EXCEPTION_CATCHING=0 \
-  -s ALLOW_MEMORY_GROWTH=1
+  -s DISABLE_EXCEPTION_CATCHING=0
 
 LINK_FLAGS = \
   -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory", "getValue", "UTF8ToString"]' \
-  -s 'EXPORTED_FUNCTIONS=[]'
+  -s 'EXPORTED_FUNCTIONS=[]' \
+  -s ALLOW_MEMORY_GROWTH=1
 
 OBJS = to_cif.o from_cif.o utils.o write.o
 
