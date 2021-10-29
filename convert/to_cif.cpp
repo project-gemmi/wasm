@@ -54,7 +54,10 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
       mtz.read_stream(gemmi::MemoryStream(data, size), true);
       std::free(data);
       mtz.switch_to_original_hkl();
-      mtz_to_cif.write_cif(mtz, nullptr, os);
+      gemmi::SMat33<double> b;
+      mtz_to_cif.staraniso_version = gemmi::read_staraniso_b_from_mtz(mtz, b);
+      gemmi::SMat33<double>* staraniso_b = b.all_zero() ? nullptr : &b;
+      mtz_to_cif.write_cif(mtz, nullptr, staraniso_b, os);
     }
     global_str = os.str();
   } catch (std::exception& e) {
@@ -103,12 +106,20 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       global_str2 = out.str();
     }
     gemmi::MtzToCif mtz_to_cif;
+    gemmi::Intensities mi;
     try {
       std::ostringstream validate_out;
-      gemmi::Intensities mi, ui;
       if (mtz1) {
+        mtz_to_cif.staraniso_version = mi.take_staraniso_b_from_mtz(*mtz1);
+        if (!mtz_to_cif.staraniso_version.empty()) {
+          validate_out << "Merged MTZ went through STARANISO "
+                       << mtz_to_cif.staraniso_version;
+          if (mi.staraniso_b.ok())
+            validate_out << ". Taking into account anisotropic scaling.\n";
+          else
+            validate_out << ". B tensor is unknown. Intensities won't be checked.\n";
+        }
         mi.read_merged_intensities_from_mtz(*mtz1);
-        mtz_to_cif.check_staraniso(*mtz1, validate_out);
       } else {
         gemmi::ReflnBlock rblock = gemmi::get_refln_block(
             gemmi::cif::read_memory(data1, size1, "<input>").blocks, {});
@@ -118,14 +129,20 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
           global_str2 += ".\n";
           mtz_to_cif.entry_id = rblock.entry_id;
         }
+        mi.take_staraniso_b_from_mmcif(rblock.block);
         mi.read_merged_intensities_from_mmcif(rblock);
       }
+      gemmi::Intensities ui;
       if (mtz2)
         ui.read_unmerged_intensities_from_mtz(*mtz2);
       else if (xds_ascii)
         ui.read_unmerged_intensities_from_xds(*xds_ascii);
-      if (!gemmi::validate_merged_intensities(mi, ui, mtz_to_cif.get_staraniso_b(),
-                                              validate_out))
+
+       // If an old StarAniso version was used that doesn't store B tensor,
+       // allow intensities to differ.
+       bool relaxed_check = !mtz_to_cif.staraniso_version.empty() && !mi.staraniso_b.ok();
+
+       if (!gemmi::validate_merged_intensities(mi, ui, relaxed_check, validate_out))
         ok = false;
       global_str2 += validate_out.str();
     } catch (std::runtime_error& e) {
@@ -143,14 +160,15 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     mtz_to_cif.write_special_marker_for_pdb = true;
     mtz_to_cif.with_history = false;
     mtz_to_cif.less_anomalous = 1;
+    gemmi::SMat33<double>* staraniso_b = mi.staraniso_b.ok() ? &mi.staraniso_b.b : nullptr;
     if (mtz1)
-      mtz_to_cif.write_cif(*mtz1, nullptr, os);
+      mtz_to_cif.write_cif(*mtz1, nullptr, staraniso_b, os);
     else
       os.write(data1, size1);
     os << "\n\n";
     mtz_to_cif.block_name = "unmerged";
     if (mtz2)
-      mtz_to_cif.write_cif(*mtz2, nullptr, os);
+      mtz_to_cif.write_cif(*mtz2, nullptr, nullptr, os);
     else if (xds_ascii)
       mtz_to_cif.write_cif_from_xds(*xds_ascii, os);
     global_str = os.str();
