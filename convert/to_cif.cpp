@@ -160,6 +160,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     mtz_to_cif.write_special_marker_for_pdb = true;
     mtz_to_cif.with_history = false;
     mtz_to_cif.less_anomalous = 1;
+    mtz_to_cif.gemmi_run_from = "mxdepo.html";
     gemmi::SMat33<double>* staraniso_b = mi.staraniso_b.ok() ? &mi.staraniso_b.b : nullptr;
     if (mtz1)
       mtz_to_cif.write_cif(*mtz1, nullptr, staraniso_b, os);
