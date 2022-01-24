@@ -102,6 +102,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
     global_str2.clear();
     if (mtz1) {
       std::ostringstream out;
+      gemmi::remove_appendix_from_column_names(*mtz1, out);
       ok = gemmi::validate_merged_mtz_deposition_columns(*mtz1, out);
       global_str2 = out.str();
     }
