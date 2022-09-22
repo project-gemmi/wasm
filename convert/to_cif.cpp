@@ -7,7 +7,6 @@
 #include <gemmi/cif.hpp>       // for cif::read_memory
 #include <gemmi/to_cif.hpp>    // for write_cif_to_stream
 #include <gemmi/to_mmcif.hpp>  // for update_cif_block
-#include <gemmi/remarks.hpp>   // for read_metadata_from_remarks
 #include <gemmi/mtz.hpp>       // for Mtz
 #include <gemmi/mtz2cif.hpp>   // for MtzToCif
 #include <gemmi/align.hpp>     // for assign_label_seq_id
@@ -23,7 +22,6 @@ const char* EMSCRIPTEN_KEEPALIVE pdb2cif(char* data, size_t size) {
     gemmi::Structure st = gemmi::read_pdb_from_memory(data, size, "input.pdb");
     std::free(data);
     if (!st.models.empty() && !st.models[0].chains.empty()) {
-      gemmi::read_metadata_from_remarks(st);
       gemmi::setup_entities(st);
       gemmi::assign_label_seq_id(st, false);
       std::ostringstream os;
