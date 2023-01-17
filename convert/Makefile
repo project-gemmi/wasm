@@ -14,14 +14,19 @@ LINK_FLAGS = \
   -s 'EXPORTED_FUNCTIONS=[]' \
   -s ALLOW_MEMORY_GROWTH=1
 
-OBJS = to_cif.o from_cif.o utils.o write.o
+GEMMI_OBJS = sprintf.o mtz2cif.o to_mmcif.o to_pdb.o mtz.o polyheur.o resinfo.o
 
-convert.js: $(OBJS)
-	$(CXX) $(FLAGS) $(LINK_FLAGS) $(OBJS) -o $@
+OBJS = to_cif.o from_cif.o utils.o
+
+convert.js: $(GEMMI_OBJS) $(OBJS)
+	$(CXX) $(FLAGS) $(LINK_FLAGS) $(GEMMI_OBJS) $(OBJS) -o $@
 
 describe.h:
 	echo -n '#define GEMMI_DESCRIBE "' >$@
 	git -C $(GEMMI_DIR) describe | sed 's/$$/"/' >> $@
+
+$(GEMMI_OBJS): %.o: $(GEMMI_DIR)/src/%.cpp
+	$(CXX) $(INCLUDE) $(FLAGS) -c $< -o $@
 
 %.o: %.cpp describe.h
 	$(CXX) $(INCLUDE) $(FLAGS) -c $<

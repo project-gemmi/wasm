@@ -14,7 +14,7 @@ const char* EMSCRIPTEN_KEEPALIVE cif2pdb(char* data, size_t size) {
   try {
     gemmi::cif::Document doc = gemmi::cif::read_memory(data, size, "input");
     std::free(data);
-    gemmi::Structure st = gemmi::make_structure(doc);
+    gemmi::Structure st = gemmi::make_structure(std::move(doc));
     if (!st.models.empty() && !st.models[0].chains.empty()) {
       std::ostringstream os;
       gemmi::write_pdb(st, os);
