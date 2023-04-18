@@ -14,7 +14,8 @@ LINK_FLAGS = \
   -s 'EXPORTED_FUNCTIONS=[]' \
   -s ALLOW_MEMORY_GROWTH=1
 
-GEMMI_OBJS = sprintf.o mtz2cif.o to_mmcif.o to_pdb.o mtz.o polyheur.o resinfo.o
+GEMMI_OBJS = eig3.o mmcif.o mtz.o mtz2cif.o polyheur.o resinfo.o \
+	     to_mmcif.o to_pdb.o sprintf.o
 
 OBJS = to_cif.o from_cif.o utils.o
 
