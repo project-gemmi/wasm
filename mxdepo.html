@@ -105,8 +105,9 @@
       Module.writeArrayToMemory(arr, buffer);
       args.push(buffer);
       args.push(arr.length);
+      args.push(window.location.hash === '#no-intensity-check');
       var ret = Module.ccall('mxdepo', 'string',
-                             ['number', 'number', 'number', 'number'], args);
+                             ['number', 'number', 'number', 'number', 'boolean'], args);
       var validation_str = Module.ccall('get_str2', 'string', [], []);
       Module.print(validation_str);
       finalize(ret);

@@ -66,7 +66,8 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
 }
 
 const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
-                                        char* data2, size_t size2) {
+                                        char* data2, size_t size2,
+                                        bool no_intensity_check) {
   try {
     std::unique_ptr<gemmi::Mtz> mtz1, mtz2;
     std::unique_ptr<gemmi::XdsAscii> xds_ascii;
@@ -137,11 +138,13 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
       else if (xds_ascii)
         ui.read_unmerged_intensities_from_xds(*xds_ascii);
 
-       // If an old StarAniso version was used that doesn't store B tensor,
-       // allow intensities to differ.
-       bool relaxed_check = !mtz_to_cif.staraniso_version.empty() && !mi.staraniso_b.ok();
+      bool relaxed_check =
+        no_intensity_check ||
+        // If an old StarAniso version was used that doesn't store B tensor,
+        // allow intensities to differ.
+        (!mtz_to_cif.staraniso_version.empty() && !mi.staraniso_b.ok());
 
-       if (!gemmi::validate_merged_intensities(mi, ui, relaxed_check, validate_out))
+      if (!gemmi::validate_merged_intensities(mi, ui, relaxed_check, validate_out))
         ok = false;
       global_str2 += validate_out.str();
     } catch (std::runtime_error& e) {
