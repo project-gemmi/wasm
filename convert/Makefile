@@ -12,9 +12,10 @@ FLAGS = \
 LINK_FLAGS = \
   -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory", "getValue", "UTF8ToString"]' \
   -s 'EXPORTED_FUNCTIONS=["_malloc"]' \
+  -s INCOMING_MODULE_JS_API=print,printErr,setStatus,onRuntimeInitialized \
   -s ALLOW_MEMORY_GROWTH=1
 
-GEMMI_OBJS = eig3.o mmcif.o mtz.o mtz2cif.o polyheur.o resinfo.o \
+GEMMI_OBJS = eig3.o intensit.o mmcif.o mtz.o mtz2cif.o polyheur.o resinfo.o \
 	     to_mmcif.o to_pdb.o sprintf.o
 
 OBJS = to_cif.o from_cif.o utils.o
