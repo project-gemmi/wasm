@@ -44,7 +44,7 @@ const char* EMSCRIPTEN_KEEPALIVE mtz2cif(char* data, size_t size) {
     gemmi::MtzToCif mtz_to_cif;
     if (size > 17 && strncmp(data, "!FORMAT=XDS_ASCII", 17) == 0) {
       gemmi::XdsAscii xds_ascii;
-      xds_ascii.read_stream(gemmi::MemoryStream(data, size), "<input>");
+      xds_ascii.read_stream(gemmi::LineReader<gemmi::MemoryStream>(data, size), "<input>");
       std::free(data);
       mtz_to_cif.write_cif_from_xds(xds_ascii, os);
     } else {
@@ -85,7 +85,7 @@ const char* EMSCRIPTEN_KEEPALIVE mxdepo(char* data1, size_t size1,
         mtz1.swap(mtz2);
     } else if (data2[0] == '!') {
       xds_ascii.reset(new gemmi::XdsAscii);
-      xds_ascii->read_stream(gemmi::MemoryStream(data2, size2), "<input>");
+      xds_ascii->read_stream(gemmi::LineReader<gemmi::MemoryStream>(data2, size2), "<input>");
       xds_ascii->gather_iset_statistics();
     } else {
       gemmi::fail("the second file is neither MTZ nor XDS_ASCII");

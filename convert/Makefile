@@ -10,13 +10,13 @@ FLAGS = \
   -s DISABLE_EXCEPTION_CATCHING=0
 
 LINK_FLAGS = \
-  -s 'EXPORTED_RUNTIME_METHODS=["ccall", "writeArrayToMemory", "getValue", "UTF8ToString"]' \
-  -s 'EXPORTED_FUNCTIONS=["_malloc"]' \
+  -s EXPORTED_RUNTIME_METHODS=ccall,writeArrayToMemory,getValue,UTF8ToString,HEAP8 \
+  -s EXPORTED_FUNCTIONS=_malloc \
   -s INCOMING_MODULE_JS_API=print,printErr,setStatus,onRuntimeInitialized \
   -s ALLOW_MEMORY_GROWTH=1
 
 GEMMI_OBJS = eig3.o intensit.o mmcif.o mtz.o mtz2cif.o polyheur.o pdb.o \
-	     resinfo.o to_mmcif.o to_pdb.o sprintf.o
+	     resinfo.o to_mmcif.o to_pdb.o sprintf.o xds_ascii.o
 
 OBJS = to_cif.o from_cif.o utils.o
 
