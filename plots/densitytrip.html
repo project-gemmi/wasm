@@ -1,0 +1,242 @@
+<!doctype html>
+<html>
+ <head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" href="../style.css">
+  <script src="https://d3js.org/d3.v4.min.js"></script>
+  <!--script src="js/d3.v4.js"></script-->
+  <title>Atomic Density Roundtrip</title>
+ </head>
+ <body style="line-height: 1.5;">
+  <nav><a href="../">◀ contents</a></nav>
+  <h1>Atomic Density Roundtrip</h1>
+  <div id="sub">
+   This page explores the effects of reciprocal-space cutoff<br>
+   on the electron density or the charge density of an isolated atom.<br>
+  </div>
+  <form style="font-size: 15px">
+   <p>
+    <select id="beam">
+     <option value="1">X-ray</option>
+     <option value="2">Electron</option>
+    </select>
+    form factors, <label for="atom">atom</label>
+    <select id="atom"></select>  
+    <label for="biso"><b><i>B<sub>iso</sub></i></b>&thinsp;=</label>
+    <input type="number" id="biso" step="0.5" min="0" value="20" required>   
+    <label for="dmin"><b><i>d<sub>min</sub></i></b>&thinsp;=</label>
+    <input type="number" id="dmin" step="0.1" min="0" value="2.0" required>&thinsp;Å
+   </p>
+   <p>
+    Unit cell parameters:
+    <input type="number" id="cell_a" step="5." min="10" value="70" required>&thinsp;Å  
+    <input type="number" id="cell_b" step="5." min="10" value="70" required>&thinsp;Å  
+    <input type="number" id="cell_c" step="5." min="10" value="70" required>&thinsp;Å  
+    <input type="number" id="cell_alp" step="5." min="10" max="170" value="90" required>&thinsp;°  
+    <input type="number" id="cell_bet"  step="5." min="10" max="170" value="90" required>&thinsp;°  
+    <input type="number" id="cell_gam" step="5." min="10" max="170" value="90" required>&thinsp;°
+   </p>
+   <p>
+    <label for="oversamp">oversampling</label>
+    <input type="number" id="oversamp" step="0.1" min="0" value="1.5" required>    
+    <label for="blur">blur</label>
+    <input type="number" id="blur" step="1" value="0" required>    
+    <label for="smooth">cutoff</label>
+    <select id="smooth">
+     <option value="0">abrupt</option>
+     <option value="1">sinc(π dmin/d)</option>
+     <option value="2">cosine taper</option>
+    </select>
+   </p>
+  </form>
+  <div style="position: relative;">
+   <div id="plot"></div>
+   <input type="button" id="button" value="Calculate and plot"
+          class="action-button" onclick="update()" disabled
+          style="position: absolute; left: 50%; top: 10px;">
+   <div style="font-size: 14px; position: absolute; left: 300px; top: 100px;">
+   <p>
+    <span style="border: 2px solid steelblue; border-radius: 8px;">Atom density</span>
+    was placed on a
+    <span id="t_a">…</span> × <span id="t_b">…</span> × <span id="t_c">…</span> grid<br>
+    (calculated at <span id="t_used_points">…</span> points
+    within a <span id="t_radius">…</span>&thinsp;Å radius),<br>
+    FFT-ed to reciprocal space,
+    cut at <i>d<sub>min</sub></i>&thinsp;=<span id="t_dmin">…</span>Å,<br>
+    and FFT-ed <span style="border: 2px solid red; border-radius: 8px;">back to density</span>.
+   </p>
+   <p>The atom's random position on the grid<br>
+   causes distances to grid nodes to vary each time.</p>
+   <p id="status"></p>
+  </div>
+  <hr>
+  <div id="footer">
+    <a href="https://github.com/project-gemmi/wasm">This tool</a>
+    is based on <a href="https://project-gemmi.github.io/">GEMMI</a>
+    <span id="t_version"></span>.
+   <br/>GEMMI is funded by <a href="https://www.ccp4.ac.uk/">CCP4</a>
+   and <a href="https://www.globalphasing.com/">Global Phasing Ltd</a>.
+  </div>
+  <script>
+  var elements = [
+    'H',  'He', 'Li', 'Be', 'B',  'C',  'N',  'O', 'F', 'Ne',
+    'Na', 'Mg', 'Al', 'Si', 'P',  'S',  'Cl', 'Ar',
+    'K',  'Ca', 'Sc', 'Ti', 'V',  'Cr', 'Mn', 'Fe', 'Co',
+    'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br', 'Kr',
+    'Rb', 'Sr', 'Y',  'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh',
+    'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I', 'Xe',
+    'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu',
+    'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
+    'Hf', 'Ta', 'W',  'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg',
+    'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn',
+    'Fr', 'Ra', 'Ac', 'Th', 'Pa', 'U',  'Np', 'Pu', 'Am',
+    'Cm', 'Bk', 'Cf'];
+  var beam = document.getElementById('beam');
+  var atom = document.getElementById('atom');
+  var biso = document.getElementById('biso');
+  var cell_a = document.getElementById('cell_a');
+  var cell_b = document.getElementById('cell_b');
+  var cell_c = document.getElementById('cell_c');
+  var cell_alp = document.getElementById('cell_alp');
+  var cell_bet = document.getElementById('cell_bet');
+  var cell_gam = document.getElementById('cell_gam');
+  var dmin = document.getElementById('dmin');
+  var oversamp = document.getElementById('oversamp');
+  var blur = document.getElementById('blur');
+  var smooth = document.getElementById('smooth');
+  var button = document.getElementById('button');
+  var parameters_changed = true;
+
+  elements.forEach(function(element, index) {
+    var option = document.createElement('option');
+    option.value = index + 1;
+    option.text = element;
+    if (index === 5) option.selected = true;
+    atom.appendChild(option);
+  });
+
+  beam.addEventListener('change', on_change);
+  atom.addEventListener('change', on_change);
+  biso.addEventListener('input', on_change);
+  cell_a.addEventListener('input', on_change);
+  cell_b.addEventListener('input', on_change);
+  cell_c.addEventListener('input', on_change);
+  cell_alp.addEventListener('input', on_change);
+  cell_bet.addEventListener('input', on_change);
+  cell_gam.addEventListener('input', on_change);
+  dmin.addEventListener('input', on_change);
+  oversamp.addEventListener('input', on_change);
+  blur.addEventListener('input', on_change);
+  smooth.addEventListener('change', on_change);
+
+  var Module = {
+    onRuntimeInitialized: function() {
+      var version = Module._get_version();
+      Module._run_srand();
+      document.getElementById('t_version').textContent = Module.UTF8ToString(version);
+      update_plot();
+    }
+  };
+  window.onerror = function() {
+    document.getElementById('status').textContent = 'Exception thrown, see JavaScript console';
+  };
+
+  function on_change() {
+    parameters_changed = true;
+    button.value = "Calculate and plot";
+  }
+
+  // ----- d3 plot -----
+  var width = 760;
+  var height = 600;
+  var margin = {top: 5, right: 30, bottom: 30, left: 35};
+  var svg = d3.select("#plot")
+  .append("svg")
+    .attr("width", width)
+    .attr("height", height);
+
+  function update() {
+    button.disabled = true;
+    setTimeout(function() {
+      update_plot();
+      parameters_changed = false;
+      button.value = "Add more points";
+    }, 0);
+  }
+
+  function update_plot() {
+    var start = new Date();
+    svg.selectAll('*').remove();
+    var r = Module._density_roundtrip(
+      Number(beam.value), Number(atom.value), Number(biso.value),
+      Number(cell_a.value), Number(cell_b.value), Number(cell_c.value),
+      Number(cell_alp.value), Number(cell_bet.value), Number(cell_gam.value),
+      Number(dmin.value), Number(oversamp.value), Number(blur.value), Number(smooth.value),
+      parameters_changed ? 0 : 1);
+    document.getElementById('t_radius').textContent = Module.getValue(r, 'double').toFixed(1);
+    document.getElementById('t_a').textContent = Module.getValue(r+8, 'i32');
+    document.getElementById('t_b').textContent = Module.getValue(r+12, 'i32');
+    document.getElementById('t_c').textContent = Module.getValue(r+16, 'i32');
+    document.getElementById('t_used_points').textContent = Module.getValue(r+20, 'i32');
+    document.getElementById('t_dmin').textContent = Number(dmin.value).toFixed(2);
+
+    var now = new Date();
+    var mb = Math.round(Module.HEAP8.length / (1024 * 102.4)) / 10;
+    document.getElementById('status').textContent = (
+      'Computations took ' + (now - start) + ' ms. WASM memory: ' + mb + ' MB.');
+
+    var pre_len = Module.getValue(r+24, 'i32') << 1;
+    var pre_addr = Module.getValue(r+28, '*');
+    var pre_array = new Float32Array(Module.HEAPF32.buffer, pre_addr, pre_len);
+    var post_len = Module.getValue(r+32, 'i32') << 1;
+    var post_addr = Module.getValue(r+36, '*');
+    var post_array = new Float32Array(Module.HEAPF32.buffer, post_addr, post_len);
+
+    var xScale = d3.scaleLinear()
+      .domain([0, pre_array[pre_len-2]])
+      .range([margin.left, width - margin.right]);
+
+    var yScale = d3.scaleLinear()
+      .domain([0, pre_array[1] * 1.02])
+      .range([height - margin.bottom, margin.top]);
+
+    var pathData = '';
+    for (var i = 0; i < pre_len; i += 2) {
+      pathData += i === 0 ? 'M' : 'L';
+      var x = pre_array[i];
+      var y = pre_array[i+1];
+      pathData += xScale(x) + ',' + yScale(y);
+    }
+
+    // Axes
+    svg.append('g')
+      .attr('transform', 'translate(0,' + (height - margin.bottom) + ')')
+      .call(d3.axisBottom(xScale));
+
+    svg.append('g')
+      .attr('transform', 'translate(' + margin.left + ',0)')
+      .call(d3.axisLeft(yScale));
+
+    // Line
+    svg.append('path')
+      .attr('d', pathData)
+      .attr('fill', 'none')
+      .attr('stroke', 'steelblue')
+      .attr('stroke-width', 1.5);
+
+    svg.selectAll('circle')
+      .data(d3.range(post_len >> 1))
+      .enter()
+      .append('circle')
+      .attr('cx', i => xScale(post_array[i << 1]))
+      .attr('cy', i => yScale(post_array[(i << 1) + 1]))
+      .attr('r', 1.0)
+      .attr('fill', 'red');
+
+    button.disabled = false;
+  }
+
+  </script>
+  <script type="text/javascript" src="density.js"></script>
+ </body>
+</html>

@@ -26,3 +26,28 @@ textarea {
  width: 100%;
 }
 hr { color: #eee8d5; background-color: #eee8d5; clear: both; margin: 40px 0 5px; }
+
+.action-button {
+ background-color: #3a4;
+ color: #fff;
+ padding: 10px 20px;
+ border: none;
+ border-radius: 4px;
+ cursor: pointer;
+ font-size: 15px;
+}
+.action-button:hover {
+ background-color: #394;
+}
+.action-button:disabled {
+ background-color: #ccc;
+ color: #666;
+ cursor: wait;
+}
+.action-button:disabled:hover {
+ background-color: #ccc;
+}
+
+input[type="number"] {
+ width: 50px;
+}
